@@ -2,7 +2,7 @@ import {
   db, REASON, REASON_LABEL,
   loadSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
   renderHeaderInto, errorBannerHtml, applyAccentColor,
-  formatDateUA, toISODate, parseISODate, emailMatchesMask, emailKey,
+  formatDateUA, toISODate, emailMatchesMask, emailKey,
   escapeHtml
 } from "./common.js";
 import {
@@ -250,7 +250,6 @@ async function submitRegistration(values, targetISO, settings) {
       absenceDate: values.absenceDate,
       topic: values.topic,
       targetDate: targetISO,
-      targetDateTS: parseISODate(targetISO),
       createdAt: serverTimestamp()
     });
 
