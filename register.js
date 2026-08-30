@@ -219,8 +219,9 @@ function buildErrorBanner(err, settings, headerState) {
     return `<div class="banner banner-warn"><strong>Ліміт тем вичерпано</strong>
       Ви вже зареєстрували максимальну кількість тем (${settings.maxTopicsPerEmail}) на цю дату відробітки.</div>`;
   }
-  console.error(err);
-  return `<div class="banner banner-error"><strong>Сталася помилка</strong>Спробуйте, будь ласка, ще раз.</div>`;
+  console.error("Registration error:", err.code || "(без коду)", err.message || err);
+  return `<div class="banner banner-error"><strong>Сталася помилка</strong>Спробуйте, будь ласка, ще раз.
+    ${err.code ? `<div class="hint">Код помилки (для діагностики): ${escapeHtml(err.code)}</div>` : ""}</div>`;
 }
 
 async function submitRegistration(values, targetISO, settings) {
