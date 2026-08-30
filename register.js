@@ -3,7 +3,7 @@ import {
   loadSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
   renderHeaderInto, errorBannerHtml, applyAccentColor,
   formatDateUA, toISODate, parseISODate, emailMatchesMask, emailKey,
-  escapeHtml
+  escapeHtml, sessionTimeSuffix
 } from "./common.js";
 import {
   doc, collection, getDoc, onSnapshot, runTransaction, serverTimestamp
@@ -25,7 +25,7 @@ async function init() {
   ]);
   applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
-  const headerState = computeHeaderState(settings, today);
+  const headerState = computeHeaderState(settings, today, timeInfo.date);
 
   renderHeaderInto(headerRoot, { settings, headerState, activePage: "register", timeSource: timeInfo.source });
 
@@ -43,16 +43,32 @@ async function init() {
 }
 
 function renderClosed(settings, headerState, today) {
-  const beforeWindow = today.getTime() < headerState.windowOpenDate.getTime();
-  const msg = beforeWindow
-    ? `Реєстрація на відробітку <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}</strong> ще не відкрита.<br>
-       Відкриється: <strong>${formatDateUA(headerState.windowOpenDate, { withWeekday: true })} о 00:01</strong>.`
-    : `Реєстрація на найближчу відробітку наразі закрита.`;
+  let title, msg, hint;
+
+  if (headerState.cutoffPassed) {
+    const nextInfo = headerState.nextTargetDate
+      ? ` Наступна реєстрація буде на <strong>${formatDateUA(headerState.nextTargetDate, { withWeekday: true })}</strong>` +
+        (headerState.nextWindowOpenDate ? `, відкриється <strong>${formatDateUA(headerState.nextWindowOpenDate)} о 00:01</strong>.` : ".")
+      : "";
+    title = "Прийом заявок на сьогодні завершено";
+    msg = `Реєстрація на відробітку <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}</strong> закрита –
+       минув час прийому заявок на сьогодні (до ${escapeHtml(settings.cutoffTime)}).${nextInfo}`;
+    hint = "";
+  } else {
+    const beforeWindow = today.getTime() < headerState.windowOpenDate.getTime();
+    title = "Реєстрація ще не відкрита";
+    msg = beforeWindow
+      ? `Реєстрація на відробітку <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}</strong> ще не відкрита.<br>
+         Відкриється: <strong>${formatDateUA(headerState.windowOpenDate, { withWeekday: true })} о 00:01</strong>.`
+      : `Реєстрація на найближчу відробітку наразі закрита.`;
+    hint = `<p class="hint" style="color:var(--slate)">Реєстрація відкривається за 3 дні до дати відробітки.</p>`;
+  }
+
   content.innerHTML = `
     <div class="card">
-      <div class="card-title">Реєстрація ще не відкрита</div>
+      <div class="card-title">${title}</div>
       <div class="banner banner-info" style="margin-top:0">${msg}</div>
-      <p class="hint" style="color:var(--slate)">Реєстрація відкривається за 3 дні до дати відробітки.</p>
+      ${hint}
     </div>`;
 }
 
@@ -64,7 +80,7 @@ async function renderForm(settings, headerState, timeInfo) {
     <div class="card">
       <div class="card-title">Реєстрація на відробітку</div>
       <div class="card-subtitle">
-        Дата відробітки: <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}</strong>.
+        Дата відробітки: <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}${sessionTimeSuffix(settings)}</strong>.
         Усі поля обов'язкові.
       </div>
 

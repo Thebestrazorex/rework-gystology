@@ -179,7 +179,6 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   font-family:var(--font-mono);
   font-size:.68rem;
   opacity:.85;
-  text-transform:capitalize;
 }
 .stamp.is-muted{
   border-color:var(--slate-light);
@@ -456,6 +455,14 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   font-size:.88rem;
   color:var(--ink-soft);
   font-style:italic;
+}
+.entry-registered{
+  margin-top:10px;
+  padding-top:8px;
+  border-top:1px dashed var(--border);
+  font-size:.72rem;
+  font-family:var(--font-mono);
+  color:var(--slate-light);
 }
 .tag{
   display:inline-block;

@@ -2,7 +2,7 @@ import {
   db, REASON_LABEL,
   loadSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
   renderHeaderInto, errorBannerHtml, applyAccentColor,
-  formatDateUA, formatDateShort, parseISODate, escapeHtml
+  formatDateUA, formatDateShort, formatDateTimeUA, parseISODate, escapeHtml
 } from "./common.js";
 import {
   collection, query, orderBy, onSnapshot
@@ -25,7 +25,7 @@ async function init() {
   settings = s;
   applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
-  headerState = computeHeaderState(settings, today);
+  headerState = computeHeaderState(settings, today, timeInfo.date);
 
   renderHeaderInto(headerRoot, { settings, headerState, activePage: "stats", timeSource: timeInfo.source });
 
@@ -113,7 +113,9 @@ function renderGroup(dateISO, regs) {
   const unex = regs.filter(r => r.reasonType === "unexcused").length;
   const exc = regs.filter(r => r.reasonType === "excused").length;
 
-  const entries = ordered.map(r => `
+  const entries = ordered.map(r => {
+    const registeredAt = r.createdAt?.toDate ? r.createdAt.toDate() : null;
+    return `
     <div class="entry">
       <div class="entry-name">${escapeHtml(r.fullName)}
         <span class="tag ${r.reasonType === "unexcused" ? "tag-unexcused" : "tag-excused"}">
@@ -126,7 +128,9 @@ function renderGroup(dateISO, regs) {
         <span>Пропуск: ${r.absenceDate ? formatDateShort(parseISODate(r.absenceDate)) : "–"}</span>
       </div>
       <div class="entry-topic">${escapeHtml(r.topic)}</div>
-    </div>`).join("");
+      ${registeredAt ? `<div class="entry-registered">🕒 Записався(-лась) на відробітку: ${formatDateTimeUA(registeredAt)}</div>` : ""}
+    </div>`;
+  }).join("");
 
   return `
     <section class="date-group">
@@ -146,7 +150,7 @@ function renderGroup(dateISO, regs) {
 }
 
 function downloadCsv() {
-  const header = ["Дата відробітки","ПІБ","Курс","Група","Причина","Дата пропуску","Тема"];
+  const header = ["Дата відробітки","ПІБ","Курс","Група","Причина","Дата пропуску","Тема","Дата й час реєстрації"];
   const rows = allRegs.map(r => [
     r.targetDate || "",
     r.fullName || "",
@@ -154,7 +158,8 @@ function downloadCsv() {
     r.group || "",
     r.reasonType === "unexcused" ? REASON_LABEL.unexcused : REASON_LABEL.excused,
     r.absenceDate || "",
-    r.topic || ""
+    r.topic || "",
+    r.createdAt?.toDate ? formatDateTimeUA(r.createdAt.toDate()) : ""
   ]);
   const csv = [header, ...rows]
     .map(row => row.map(csvCell).join(";"))

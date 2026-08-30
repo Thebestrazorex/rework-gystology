@@ -48,7 +48,9 @@ const DEFAULT_SETTINGS = {
   maxUnexcused: 10,
   maxExcused: 10,
   logoBase64: "",
-  accentColor: "#A6383C"
+  accentColor: "#A6383C",
+  cutoffTime: "23:59",
+  sessionStartTime: ""
 };
 
 export const ACCENT_PRESETS = [
@@ -77,6 +79,17 @@ function kyivParts(date) {
     return acc;
   }, {});
   return { y: +parts.year, m: +parts.month, d: +parts.day };
+}
+
+function kyivTimeParts(date) {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Kyiv", hour: "2-digit", minute: "2-digit", hour12: false
+  });
+  const parts = fmt.formatToParts(date).reduce((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+  return { hour: +parts.hour, minute: +parts.minute };
 }
 
 // «Дата-тільки» об'єкт Date, опівночі за локальним годинником –
@@ -118,6 +131,27 @@ export function formatDateShort(dateOnly) {
   const m = String(dateOnly.getMonth() + 1).padStart(2, "0");
   const y = dateOnly.getFullYear();
   return `${d}.${m}.${y}`;
+}
+
+// Дата й точна година (за київським часом, незалежно від пристрою
+// глядача) – використовується для мітки "коли зареєструвався".
+export function formatDateTimeUA(date) {
+  const fmt = new Intl.DateTimeFormat("uk-UA", {
+    timeZone: "Europe/Kyiv",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  });
+  return fmt.format(date);
+}
+
+// Суфікс " о ГГ:ХХ" для додавання після дати відробітки, якщо в
+// налаштуваннях вказано (суто інформаційний) час початку відробітки.
+export function sessionTimeSuffix(settings) {
+  return settings?.sessionStartTime ? ` о ${settings.sessionStartTime}` : "";
+}
+
+function capitalize(word) {
+  return word ? word.charAt(0).toUpperCase() + word.slice(1) : word;
 }
 
 // Поточні дата й час: пробуємо два незалежні мережеві джерела часу
@@ -229,7 +263,9 @@ export function getWindowOpenDate(targetDate) {
 
 // Обгортка: обчислює стан «дата відробітки / вікно реєстрації»
 // і ловить помилки конфігурації в одному місці.
-export function computeHeaderState(settings, todayDateOnly) {
+// nowInstant (необов'язково) – повний момент часу (не лише дата),
+// потрібен для перевірки часу-дедлайну в сам день відробітки.
+export function computeHeaderState(settings, todayDateOnly, nowInstant) {
   if (!settings) {
     return { ok: false, message: "Систему ще не налаштовано. Зверніться до адміністратора (значок 🔑)." };
   }
@@ -239,14 +275,29 @@ export function computeHeaderState(settings, todayDateOnly) {
       todayDateOnly, startDate, settings.frequencyWeeks, settings.makeupDayOfWeek
     );
     const windowOpenDate = getWindowOpenDate(targetDate);
-    const windowIsOpen = todayDateOnly.getTime() >= windowOpenDate.getTime()
+    const withinDateRange = todayDateOnly.getTime() >= windowOpenDate.getTime()
       && todayDateOnly.getTime() <= targetDate.getTime();
+
+    // У сам день відробітки реєстрація додатково закривається о
+    // вказаній у налаштуваннях годині (cutoffTime, за замовчуванням
+    // 23:59 – тобто фактично без обмеження).
+    let cutoffPassed = false;
+    const isTargetDay = todayDateOnly.getTime() === targetDate.getTime();
+    if (isTargetDay && nowInstant && settings.cutoffTime) {
+      const [cH, cM] = String(settings.cutoffTime).split(":").map(Number);
+      if (Number.isFinite(cH) && Number.isFinite(cM)) {
+        const { hour, minute } = kyivTimeParts(nowInstant);
+        if (hour > cH || (hour === cH && minute >= cM)) cutoffPassed = true;
+      }
+    }
+
+    const windowIsOpen = withinDateRange && !cutoffPassed;
     let nextTargetDate = null, nextWindowOpenDate = null;
     try {
       nextTargetDate = computeNextTargetDate(targetDate, startDate, settings.frequencyWeeks, settings.makeupDayOfWeek);
       nextWindowOpenDate = getWindowOpenDate(nextTargetDate);
     } catch (e) { /* не критично для відображення */ }
-    return { ok: true, targetDate, windowOpenDate, windowIsOpen, nextTargetDate, nextWindowOpenDate };
+    return { ok: true, targetDate, windowOpenDate, windowIsOpen, cutoffPassed, nextTargetDate, nextWindowOpenDate };
   } catch (e) {
     return { ok: false, message: e.message || "Помилка обчислення дати відробітки." };
   }
@@ -366,7 +417,7 @@ export function renderHeaderInto(rootEl, { settings, headerState, activePage, ti
       <div class="stamp" title="Дата, на яку триває запис">
         <span class="stamp-label">Відробітка</span>
         <span class="stamp-date">${formatDateShort(headerState.targetDate)}</span>
-        <span class="stamp-weekday">${WEEKDAY_FULL[isoWeekday(headerState.targetDate) - 1]}</span>
+        <span class="stamp-weekday">${capitalize(WEEKDAY_FULL[isoWeekday(headerState.targetDate) - 1])}${sessionTimeSuffix(settings)}</span>
       </div>`;
   } else {
     stampHtml = `

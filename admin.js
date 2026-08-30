@@ -30,7 +30,7 @@ async function boot() {
   settings = s;
   applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
-  headerState = computeHeaderState(settings, today);
+  headerState = computeHeaderState(settings, today, timeInfo.date);
   renderHeaderInto(headerRoot, { settings, headerState, activePage: "admin", timeSource: timeInfo.source });
 
   onAuthStateChanged(auth, (user) => {
@@ -102,7 +102,7 @@ function renderPanel() {
       ${headerState.ok ? `
         <div class="status-line">
           Дата відробітки: <strong>${formatDateUA(headerState.targetDate, { withWeekday: true })}</strong> ·
-          реєстрація ${headerState.windowIsOpen ? "відкрита" : "закрита"},
+          реєстрація ${headerState.windowIsOpen ? "відкрита" : "закрита"}${headerState.cutoffPassed ? " (минув сьогоднішній дедлайн " + escapeHtml(s.cutoffTime) + ")" : ""},
           відкриється/відкрилась: ${formatDateUA(headerState.windowOpenDate)}
         </div>` : `<div class="banner banner-error" style="margin-top:0"><strong>Помилка конфігурації</strong>${escapeHtml(headerState.message)}</div>`}
       <div class="actions-row">
@@ -177,6 +177,16 @@ function renderPanel() {
             <label for="s-start">Дата старту відліку тижнів</label>
             <input type="date" id="s-start" value="${escapeHtml(s.startDate || "")}">
             <div class="hint">Тиждень починається з понеділка – дату буде автоматично скориговано на понеділок цього тижня.</div>
+          </div>
+          <div class="field">
+            <label for="s-cutoff">До якої години можна записатися в сам день відробітки</label>
+            <input type="time" id="s-cutoff" value="${escapeHtml(s.cutoffTime || "23:59")}">
+            <div class="hint">Стосується лише самого дня відробітки. У попередні дні вікна (за 3-1 день) обмеження немає. За замовчуванням 23:59 – тобто фактично без обмеження.</div>
+          </div>
+          <div class="field">
+            <label for="s-session-time">Година початку відробітки (інформаційно)</label>
+            <input type="time" id="s-session-time" value="${escapeHtml(s.sessionStartTime || "")}">
+            <div class="hint">Необов'язково. Якщо вказати – ця година показуватиметься студентам поруч із датою відробітки на головній сторінці. На саму реєстрацію чи ліміти не впливає.</div>
           </div>
         </div>
 
@@ -331,12 +341,19 @@ async function onSaveSettings(e) {
     const mask = document.getElementById("s-mask").value.trim();
     if (mask && !mask.startsWith("@")) throw new Error("Маска пошти має починатися з символу @.");
 
+    const cutoffTime = document.getElementById("s-cutoff").value || "23:59";
+    if (!/^\d{2}:\d{2}$/.test(cutoffTime)) throw new Error("Некоректний формат часу-дедлайну.");
+
+    const sessionStartTime = document.getElementById("s-session-time").value || "";
+
     const newSettings = {
       department: document.getElementById("s-department").value.trim(),
       subject: document.getElementById("s-subject").value.trim(),
       frequencyWeeks: Number(document.getElementById("s-frequency").value),
       startDate: startISO,
       makeupDayOfWeek: Number(document.getElementById("s-day").value),
+      cutoffTime,
+      sessionStartTime,
       emailMask: mask,
       maxTopicsPerEmail: Number(document.getElementById("s-max-topics").value) || 1,
       maxUnexcused: Number(document.getElementById("s-max-unexcused").value) || 1,
@@ -357,7 +374,7 @@ async function onSaveSettings(e) {
 
     // перерахувати шапку/поточний стан
     const timeInfo = await getCurrentDateTime();
-    headerState = computeHeaderState(settings, kyivDateOnly(timeInfo.date));
+    headerState = computeHeaderState(settings, kyivDateOnly(timeInfo.date), timeInfo.date);
     renderHeaderInto(headerRoot, { settings, headerState, activePage: "admin", timeSource: timeInfo.source });
     renderPanel();
   } catch (err) {
