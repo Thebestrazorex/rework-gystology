@@ -120,21 +120,37 @@ export function formatDateShort(dateOnly) {
   return `${d}.${m}.${y}`;
 }
 
-// Поточні дата й час: спершу пробуємо мережевий час (Kyiv),
-// якщо недоступно – беремо локальний час пристрою.
+// Поточні дата й час: пробуємо два незалежні мережеві джерела часу
+// по черзі (worldtimeapi.org, яким ми користувались раніше, назавжди
+// припинив роботу), і лише якщо обидва недоступні – беремо час пристрою.
 export async function getCurrentDateTime() {
+  // Джерело 1
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-    const res = await fetch("https://worldtimeapi.org/api/timezone/Europe/Kyiv", {
-      signal: controller.signal, cache: "no-store"
-    });
-    clearTimeout(timeoutId);
+    const data = await fetchJsonWithTimeout("https://time.now/developer/api/timezone/Europe/Kyiv", 3000);
+    if (data?.datetime) return { date: new Date(data.datetime), source: "network" };
+  } catch (e) { /* пробуємо наступне джерело */ }
+
+  // Джерело 2 (запитуємо в UTC, щоб уникнути неоднозначності зі зсувом часового поясу)
+  try {
+    const data = await fetchJsonWithTimeout("https://timeapi.io/api/time/current/zone?timeZone=UTC", 3000);
+    if (data?.year) {
+      const ms = Date.UTC(data.year, data.month - 1, data.day, data.hour, data.minute, data.seconds || 0);
+      return { date: new Date(ms), source: "network" };
+    }
+  } catch (e) { /* переходимо до часу пристрою */ }
+
+  return { date: new Date(), source: "local" };
+}
+
+async function fetchJsonWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
     if (!res.ok) throw new Error("network time unavailable");
-    const data = await res.json();
-    return { date: new Date(data.datetime), source: "network" };
-  } catch (e) {
-    return { date: new Date(), source: "local" };
+    return await res.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
