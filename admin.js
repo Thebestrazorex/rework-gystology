@@ -2,7 +2,7 @@ import {
   db, auth, ADMIN_EMAIL,
   loadSettings, defaultSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
   renderHeaderInto, formatDateUA, toISODate, parseISODate, getMondayOfWeek,
-  resizeImageFile, escapeHtml, WEEKDAY_FULL
+  resizeImageFile, escapeHtml, WEEKDAY_FULL, applyAccentColor, ACCENT_PRESETS
 } from "./common.js";
 import {
   doc, setDoc, getDocs, collection, writeBatch
@@ -18,6 +18,7 @@ const content = document.getElementById("content");
 let settings = null;
 let headerState = null;
 let pendingLogoBase64 = null;
+let pendingAccentColor = null;
 
 boot();
 
@@ -27,6 +28,7 @@ async function boot() {
     getCurrentDateTime()
   ]);
   settings = s;
+  applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
   headerState = computeHeaderState(settings, today);
   renderHeaderInto(headerRoot, { settings, headerState, activePage: "admin", timeSource: timeInfo.source });
@@ -81,7 +83,7 @@ function describeAuthError(err) {
   }
   if (code === "auth/user-not-found") {
     return `<div class="banner banner-error"><strong>Обліковий запис адміністратора не створено</strong>
-      Виконайте крок 3 з інструкції README.md — створіть користувача ${escapeHtml(ADMIN_EMAIL)} у Firebase Authentication.</div>`;
+      Виконайте крок 3 з інструкції README.md – створіть користувача ${escapeHtml(ADMIN_EMAIL)} у Firebase Authentication.</div>`;
   }
   return `<div class="banner banner-error"><strong>Невірний пароль</strong>Спробуйте ще раз.</div>`;
 }
@@ -139,6 +141,21 @@ function renderPanel() {
         </div>
 
         <div class="settings-section">
+          <h3>Акцентний колір</h3>
+          <p class="desc">Колір штампу з датою, кнопок і виділень по всій програмі. Оберіть готовий варіант або вкажіть свій.</p>
+          <div class="color-swatches" id="color-swatches">
+            ${ACCENT_PRESETS.map(p => `
+              <button type="button" class="color-swatch ${sameHex(s.accentColor, p.hex) ? "selected" : ""}"
+                data-hex="${p.hex}" style="background:${p.hex}" title="${escapeHtml(p.name)}"></button>
+            `).join("")}
+          </div>
+          <div class="color-picker-row">
+            <input type="color" id="s-accent" value="${sanitizeHex(s.accentColor)}">
+            <span class="hex-label" id="accent-hex-label">${sanitizeHex(s.accentColor)}</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3>Розклад відробіток</h3>
           <p class="desc">Визначає дату відробітки, яку бачать студенти під час реєстрації.</p>
           <div class="field-row">
@@ -159,7 +176,7 @@ function renderPanel() {
           <div class="field">
             <label for="s-start">Дата старту відліку тижнів</label>
             <input type="date" id="s-start" value="${escapeHtml(s.startDate || "")}">
-            <div class="hint">Тиждень починається з понеділка — дату буде автоматично скориговано на понеділок цього тижня.</div>
+            <div class="hint">Тиждень починається з понеділка – дату буде автоматично скориговано на понеділок цього тижня.</div>
           </div>
         </div>
 
@@ -182,11 +199,11 @@ function renderPanel() {
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="s-max-unexcused">Максимум реєстрацій — неповажна причина</label>
+              <label for="s-max-unexcused">Максимум реєстрацій – неповажна причина</label>
               <input type="number" id="s-max-unexcused" min="1" value="${Number(s.maxUnexcused) || 10}">
             </div>
             <div class="field">
-              <label for="s-max-excused">Максимум реєстрацій — поважна причина / негативна оцінка</label>
+              <label for="s-max-excused">Максимум реєстрацій – поважна причина / негативна оцінка</label>
               <input type="number" id="s-max-excused" min="1" value="${Number(s.maxExcused) || 10}">
             </div>
           </div>
@@ -237,6 +254,13 @@ function renderPanel() {
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+function sanitizeHex(hex) {
+  return /^#[0-9a-fA-F]{6}$/.test(hex || "") ? hex : "#A6383C";
+}
+function sameHex(a, b) {
+  return sanitizeHex(a).toLowerCase() === sanitizeHex(b).toLowerCase();
+}
+
 function wirePanelEvents() {
   document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
 
@@ -258,6 +282,26 @@ function wirePanelEvents() {
     preview.src = "";
     preview.style.display = "none";
   });
+
+  // акцентний колір
+  const colorInput = document.getElementById("s-accent");
+  const hexLabel = document.getElementById("accent-hex-label");
+  const swatchesBox = document.getElementById("color-swatches");
+
+  function setAccent(hex) {
+    pendingAccentColor = hex;
+    colorInput.value = hex;
+    hexLabel.textContent = hex.toUpperCase();
+    applyAccentColor(hex);
+    swatchesBox.querySelectorAll(".color-swatch").forEach(btn => {
+      btn.classList.toggle("selected", sameHex(btn.dataset.hex, hex));
+    });
+  }
+
+  swatchesBox.querySelectorAll(".color-swatch").forEach(btn => {
+    btn.addEventListener("click", () => setAccent(btn.dataset.hex));
+  });
+  colorInput.addEventListener("input", () => setAccent(colorInput.value));
 
   // налаштування
   document.getElementById("settings-form").addEventListener("submit", onSaveSettings);
@@ -297,12 +341,14 @@ async function onSaveSettings(e) {
       maxTopicsPerEmail: Number(document.getElementById("s-max-topics").value) || 1,
       maxUnexcused: Number(document.getElementById("s-max-unexcused").value) || 1,
       maxExcused: Number(document.getElementById("s-max-excused").value) || 1,
-      logoBase64: pendingLogoBase64 !== null ? pendingLogoBase64 : (s0().logoBase64 || "")
+      logoBase64: pendingLogoBase64 !== null ? pendingLogoBase64 : (s0().logoBase64 || ""),
+      accentColor: sanitizeHex(pendingAccentColor || s0().accentColor)
     };
 
     await setDoc(doc(db, "settings", "main"), newSettings);
     settings = newSettings;
     pendingLogoBase64 = null;
+    pendingAccentColor = null;
 
     const startNote = rawStart !== startISO
       ? ` Дату старту скориговано на понеділок: ${escapeHtml(startISO)}.`

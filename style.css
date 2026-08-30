@@ -1,6 +1,6 @@
 /* =========================================================
-   Електронна реєстрація на відробітку — спільні стилі
-   Дизайн: "офіційний реєстр/журнал" — папір, чорнило, штамп-дата.
+   Електронна реєстрація на відробітку – спільні стилі
+   Дизайн: «офіційний реєстр/журнал» – папір, чорнило, штамп-дата.
    ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
@@ -10,8 +10,9 @@
   --ink-soft:#33456B;
   --paper:#EEECE3;
   --paper-raised:#FFFFFF;
-  --seal:#A6383C;
-  --seal-dark:#7E2A2E;
+  --accent:#A6383C;
+  --accent-dark:#7E2A2E;
+  --danger-dark:#7E2A2E;
   --gold:#B08D2B;
   --slate:#5B6472;
   --slate-light:#8992A0;
@@ -56,10 +57,10 @@ h1,h2,h3{ font-family:var(--font-display); margin:0; color:var(--ink); }
 
 button, input, select, textarea{ font-family:inherit; font-size:1rem; }
 
-::selection{ background:rgba(166,56,60,.18); }
+::selection{ background:color-mix(in srgb, var(--accent) 18%, transparent); }
 
 :focus-visible{
-  outline:2.5px solid var(--seal);
+  outline:2.5px solid var(--accent);
   outline-offset:2px;
   border-radius:4px;
 }
@@ -118,7 +119,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   font-size:.72rem;
   letter-spacing:.09em;
   text-transform:uppercase;
-  color:var(--seal);
+  color:var(--accent);
   font-weight:600;
   display:block;
   margin-bottom:4px;
@@ -138,23 +139,23 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   margin-top:3px;
 }
 
-/* the "stamp" — signature element: the makeup-session date */
+/* «штамп» – елемент-підпис: дата відробітки */
 .stamp{
   flex:none;
-  border:2px solid var(--seal);
+  border:2px solid var(--accent);
   border-radius:10px;
   padding:8px 16px 9px;
   transform:rotate(-2deg);
-  color:var(--seal);
+  color:var(--accent);
   text-align:center;
   position:relative;
   background:
-    repeating-linear-gradient(135deg, rgba(166,56,60,.05) 0 6px, transparent 6px 12px);
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, transparent) 0 6px, transparent 6px 12px);
 }
 .stamp::before{
   content:'';
   position:absolute; inset:3px;
-  border:1px solid var(--seal);
+  border:1px solid var(--accent);
   border-radius:7px;
   opacity:.55;
 }
@@ -212,7 +213,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   transition:color .15s ease, border-color .15s ease;
 }
 .nav-tab:hover{ color:var(--ink); }
-.nav-tab.active{ color:var(--seal); border-bottom-color:var(--seal); }
+.nav-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
 
 .nav-spacer{ flex:1; }
 
@@ -262,7 +263,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   border:1px solid transparent;
 }
 .banner strong{ display:block; margin-bottom:2px; font-family:var(--font-display); font-size:1rem; }
-.banner-error{ background:var(--danger-bg); color:var(--seal-dark); border-color:rgba(166,56,60,.25); }
+.banner-error{ background:var(--danger-bg); color:var(--danger-dark); border-color:rgba(166,56,60,.25); }
 .banner-warn{ background:var(--warn-bg); color:var(--warn); border-color:rgba(138,106,30,.25); }
 .banner-success{ background:var(--success-bg); color:var(--success); border-color:rgba(47,110,78,.25); }
 .banner-info{ background:#EAF0F6; color:var(--ink-soft); border-color:rgba(51,69,107,.18); }
@@ -298,8 +299,8 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   transition:border-color .15s ease, box-shadow .15s ease;
 }
 .field input:focus, .field select:focus, .field textarea:focus{
-  border-color:var(--seal);
-  box-shadow:0 0 0 3px rgba(166,56,60,.12);
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
   outline:none;
 }
 .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -318,8 +319,8 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
 }
 .radio-option:hover{ border-color:var(--slate-light); }
 .radio-option.checked,
-.radio-option:has(input:checked){ border-color:var(--seal); background:rgba(166,56,60,.045); }
-.radio-option input{ margin-top:3px; accent-color:var(--seal); }
+.radio-option:has(input:checked){ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 5%, transparent); }
+.radio-option input{ margin-top:3px; accent-color:var(--accent); }
 .radio-option .opt-title{ font-weight:600; font-size:.92rem; }
 .radio-option .opt-sub{ font-size:.78rem; color:var(--slate); margin-top:2px; }
 
@@ -338,8 +339,8 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
 }
 .btn:active{ transform:translateY(1px); }
 .btn:disabled{ opacity:.5; cursor:not-allowed; }
-.btn-primary{ background:var(--seal); color:#fff; box-shadow:0 4px 14px rgba(166,56,60,.28); }
-.btn-primary:hover:not(:disabled){ background:var(--seal-dark); }
+.btn-primary{ background:var(--accent); color:#fff; box-shadow:0 4px 14px color-mix(in srgb, var(--accent) 28%, transparent); }
+.btn-primary:hover:not(:disabled){ background:var(--accent-dark); }
 .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--border); }
 .btn-ghost:hover{ border-color:var(--slate); }
 .btn-danger{ background:#fff; color:var(--danger); border:1.5px solid var(--danger); }
@@ -375,7 +376,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   color:var(--slate);
   margin-top:6px;
 }
-.summary-tile.seal .num{ color:var(--seal); }
+.summary-tile.accent .num{ color:var(--accent); }
 .summary-tile.gold .num{ color:var(--gold); }
 
 .date-group{ margin-top:44px; }
@@ -436,7 +437,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   left:-25px; top:19px;
   width:9px; height:9px;
   border-radius:50%;
-  background:var(--seal);
+  background:var(--accent);
   border:2px solid var(--paper-raised);
   box-shadow:0 0 0 1.5px var(--line);
 }
@@ -465,7 +466,7 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   border-radius:100px;
   font-weight:600;
 }
-.tag-unexcused{ background:var(--danger-bg); color:var(--seal-dark); }
+.tag-unexcused{ background:var(--danger-bg); color:var(--danger-dark); }
 .tag-excused{ background:var(--warn-bg); color:var(--warn); }
 
 .empty-state{
@@ -521,7 +522,34 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   padding:16px;
   background:var(--danger-bg);
 }
-.danger-zone h3{ color:var(--seal-dark); }
+.danger-zone h3{ color:var(--danger-dark); }
+
+.color-swatches{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+.color-swatch{
+  width:34px; height:34px;
+  border-radius:50%;
+  border:2px solid var(--paper-raised);
+  box-shadow:0 0 0 1.5px var(--border);
+  cursor:pointer;
+  padding:0;
+  transition:box-shadow .15s ease, transform .1s ease;
+}
+.color-swatch:hover{ transform:scale(1.08); }
+.color-swatch.selected{ box-shadow:0 0 0 2.5px var(--ink); }
+.color-picker-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:2px; }
+.color-picker-row input[type=color]{
+  width:44px; height:44px;
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  padding:2px;
+  cursor:pointer;
+  background:#fff;
+}
+.color-picker-row .hex-label{
+  font-family:var(--font-mono);
+  font-size:.82rem;
+  color:var(--slate);
+}
 
 .actions-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
 

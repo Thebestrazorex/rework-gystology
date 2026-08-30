@@ -1,5 +1,5 @@
 // =========================================================
-// Електронна реєстрація на відробітку — спільна логіка
+// Електронна реєстрація на відробітку – спільна логіка
 // Розробник системи: Гаврищук Любомир
 // =========================================================
 
@@ -47,8 +47,19 @@ const DEFAULT_SETTINGS = {
   maxTopicsPerEmail: 2,
   maxUnexcused: 10,
   maxExcused: 10,
-  logoBase64: ""
+  logoBase64: "",
+  accentColor: "#A6383C"
 };
+
+export const ACCENT_PRESETS = [
+  { name: "Цегляний (за замовчуванням)", hex: "#A6383C" },
+  { name: "Академічний синій", hex: "#2C4870" },
+  { name: "Смарагдовий", hex: "#2F6E4E" },
+  { name: "Баклажановий", hex: "#6B3F69" },
+  { name: "Теракотовий", hex: "#B4622E" },
+  { name: "Графітовий", hex: "#3A3F47" },
+  { name: "Бірюзовий", hex: "#1F6E70" }
+];
 
 // =========================================================
 // Дата й час
@@ -68,7 +79,7 @@ function kyivParts(date) {
   return { y: +parts.year, m: +parts.month, d: +parts.day };
 }
 
-// "Дата-тільки" об'єкт Date, опівночі за локальним годинником —
+// «Дата-тільки» об'єкт Date, опівночі за локальним годинником –
 // зручно для арифметики тижнів/днів, незалежно від таймзони.
 export function dateOnlyFromParts({ y, m, d }) {
   return new Date(y, m - 1, d, 0, 0, 0, 0);
@@ -110,7 +121,7 @@ export function formatDateShort(dateOnly) {
 }
 
 // Поточні дата й час: спершу пробуємо мережевий час (Kyiv),
-// якщо недоступно — беремо локальний час пристрою.
+// якщо недоступно – беремо локальний час пристрою.
 export async function getCurrentDateTime() {
   try {
     const controller = new AbortController();
@@ -151,7 +162,7 @@ function weeksBetweenMondays(mondayA, mondayB) {
 }
 
 // Основний алгоритм: обчислює дату найближчої відробітки.
-// today, startDate — об'єкти "дата-тільки" (опівночі).
+// today, startDate – об'єкти «дата-тільки» (опівночі).
 // Кидає помилку (Error), якщо конфігурація некоректна.
 export function computeTargetDate(today, startDate, frequencyWeeks, makeupDayOfWeek) {
   if (!startDate) {
@@ -190,7 +201,7 @@ export function computeTargetDate(today, startDate, frequencyWeeks, makeupDayOfW
 }
 
 // Наступна дата відробітки ПІСЛЯ заданої (для повідомлень
-// "місць більше немає, наступна дата — ...").
+// «місць більше немає, наступна дата – ...».
 export function computeNextTargetDate(afterDate, startDate, frequencyWeeks, makeupDayOfWeek) {
   const nextSearchFrom = addDays(afterDate, 1);
   return computeTargetDate(nextSearchFrom, startDate, frequencyWeeks, makeupDayOfWeek);
@@ -200,7 +211,7 @@ export function getWindowOpenDate(targetDate) {
   return addDays(targetDate, -3);
 }
 
-// Обгортка: обчислює стан "дата відробітки / вікно реєстрації"
+// Обгортка: обчислює стан «дата відробітки / вікно реєстрації»
 // і ловить помилки конфігурації в одному місці.
 export function computeHeaderState(settings, todayDateOnly) {
   if (!settings) {
@@ -250,6 +261,38 @@ export function emailKey(email) {
 }
 
 // =========================================================
+// Акцентний колір теми
+// =========================================================
+
+function hexToRgb(hex) {
+  const m = hex.replace("#", "").match(/.{1,2}/g);
+  return { r: parseInt(m[0], 16), g: parseInt(m[1], 16), b: parseInt(m[2], 16) };
+}
+
+function rgbToHex({ r, g, b }) {
+  const h = n => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+export function darkenHex(hex, amount = 0.24) {
+  try {
+    const { r, g, b } = hexToRgb(hex);
+    return rgbToHex({ r: r * (1 - amount), g: g * (1 - amount), b: b * (1 - amount) });
+  } catch (e) {
+    return hex;
+  }
+}
+
+// Застосовує акцентний колір із налаштувань до всієї сторінки
+// (через CSS-змінні --accent/--accent-dark). Викликати одразу
+// після завантаження налаштувань, до відображення вмісту.
+export function applyAccentColor(hex) {
+  const safe = /^#[0-9a-fA-F]{6}$/.test(hex || "") ? hex : "#A6383C";
+  document.documentElement.style.setProperty("--accent", safe);
+  document.documentElement.style.setProperty("--accent-dark", darkenHex(safe, 0.24));
+}
+
+// =========================================================
 // Утиліти
 // =========================================================
 
@@ -261,7 +304,7 @@ export function escapeHtml(str) {
 
 // Стискає й зменшує зображення логотипу до розумного розміру,
 // повертає base64 data URL (щоб зберігати прямо в Firestore
-// без потреби у Firebase Storage — той тепер вимагає платний план).
+// без потреби у Firebase Storage – той тепер вимагає платний план).
 export function resizeImageFile(file, maxDim = 320, quality = 0.85) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -313,7 +356,7 @@ export function renderHeaderInto(rootEl, { settings, headerState, activePage, ti
     stampHtml = `
       <div class="stamp is-muted" title="${escapeHtml(headerState.message)}">
         <span class="stamp-label">Дата не визначена</span>
-        <span class="stamp-date">—.—.—</span>
+        <span class="stamp-date">–.–.–</span>
       </div>`;
   }
 

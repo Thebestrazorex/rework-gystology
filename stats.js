@@ -1,7 +1,7 @@
 import {
   db, REASON_LABEL,
   loadSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
-  renderHeaderInto, errorBannerHtml,
+  renderHeaderInto, errorBannerHtml, applyAccentColor,
   formatDateUA, formatDateShort, parseISODate, escapeHtml
 } from "./common.js";
 import {
@@ -23,6 +23,7 @@ async function init() {
     getCurrentDateTime()
   ]);
   settings = s;
+  applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
   headerState = computeHeaderState(settings, today);
 
@@ -65,7 +66,7 @@ function render() {
           <div class="num">${allRegs.length}</div>
           <div class="cap">Реєстрацій за весь час</div>
         </div>
-        <div class="summary-tile seal">
+        <div class="summary-tile accent">
           <div class="num">${totalUnexcused}</div>
           <div class="cap">${escapeHtml(REASON_LABEL.unexcused)}</div>
         </div>
@@ -108,7 +109,7 @@ function renderCurrentQuota() {
 
 function renderGroup(dateISO, regs) {
   const dateOnly = parseISODate(dateISO);
-  const ordered = [...regs].reverse(); // хронологічно: перший зареєстрований — перший у списку
+  const ordered = [...regs].reverse(); // хронологічно: перший зареєстрований – перший у списку
   const unex = regs.filter(r => r.reasonType === "unexcused").length;
   const exc = regs.filter(r => r.reasonType === "excused").length;
 
@@ -122,7 +123,7 @@ function renderGroup(dateISO, regs) {
       <div class="entry-meta">
         <span>Курс ${escapeHtml(r.course)}</span>
         <span>Група ${escapeHtml(r.group)}</span>
-        <span>Пропуск: ${r.absenceDate ? formatDateShort(parseISODate(r.absenceDate)) : "—"}</span>
+        <span>Пропуск: ${r.absenceDate ? formatDateShort(parseISODate(r.absenceDate)) : "–"}</span>
       </div>
       <div class="entry-topic">${escapeHtml(r.topic)}</div>
     </div>`).join("");

@@ -1,7 +1,7 @@
 import {
   db, REASON, REASON_LABEL,
   loadSettings, kyivDateOnly, getCurrentDateTime, computeHeaderState,
-  renderHeaderInto, errorBannerHtml,
+  renderHeaderInto, errorBannerHtml, applyAccentColor,
   formatDateUA, toISODate, emailMatchesMask, emailKey,
   escapeHtml
 } from "./common.js";
@@ -23,6 +23,7 @@ async function init() {
     loadSettings().catch(() => null),
     getCurrentDateTime()
   ]);
+  applyAccentColor(settings?.accentColor);
   const today = kyivDateOnly(timeInfo.date);
   const headerState = computeHeaderState(settings, today);
 
@@ -74,7 +75,7 @@ async function renderForm(settings, headerState, timeInfo) {
         <div class="field">
           <label for="f-email">Електронна пошта</label>
           <input type="email" id="f-email" required placeholder="ivan.petrenko${escapeHtml(settings.emailMask || "")}">
-          <div class="hint">Приймається лише пошта з доменом ${escapeHtml(settings.emailMask || "—")}</div>
+          <div class="hint">Приймається лише пошта з доменом ${escapeHtml(settings.emailMask || "–")}</div>
         </div>
 
         <div class="field">
@@ -148,7 +149,7 @@ async function refreshQuotaLine(targetISO, settings) {
     const snap = await getDoc(doc(db, "counters", targetISO));
     const c = snap.exists() ? snap.data() : { unexcused: 0, excused: 0 };
     el.textContent =
-      `Зайнято місць — неповажна причина: ${c.unexcused || 0}/${settings.maxUnexcused}, ` +
+      `Зайнято місць – неповажна причина: ${c.unexcused || 0}/${settings.maxUnexcused}, ` +
       `поважна причина/негативна оцінка: ${c.excused || 0}/${settings.maxExcused}`;
   } catch (e) {
     el.textContent = "";
