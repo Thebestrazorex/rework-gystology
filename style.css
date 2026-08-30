@@ -87,19 +87,20 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
 .site-header-inner{
   max-width:920px;
   margin:0 auto;
-  padding:22px 20px 18px;
+  padding:26px 20px 20px;
   display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:20px;
-  flex-wrap:wrap;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:16px;
 }
 
 .brand{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   gap:14px;
   min-width:0;
+  text-align:left;
 }
 
 .brand-logo{
@@ -195,8 +196,10 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
   padding:0 20px;
   display:flex;
   align-items:center;
+  justify-content:center;
   gap:4px;
   border-bottom:1px solid var(--border);
+  position:relative;
 }
 
 .nav-tab{
@@ -214,9 +217,13 @@ button, input, select, textarea{ font-family:inherit; font-size:1rem; }
 .nav-tab:hover{ color:var(--ink); }
 .nav-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
 
-.nav-spacer{ flex:1; }
+.nav-spacer{ display:none; }
 
 .key-link{
+  position:absolute;
+  right:20px;
+  top:50%;
+  transform:translateY(-50%);
   text-decoration:none;
   color:var(--slate-light);
   font-size:1.05rem;
