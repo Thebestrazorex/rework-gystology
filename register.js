@@ -96,7 +96,7 @@ async function renderForm(settings, headerState, timeInfo) {
 
         <div class="field">
           <label for="f-name">Прізвище Ім'я По батькові</label>
-          <input type="text" id="f-name" required placeholder="Петренко Іван Олександрович">
+          <input type="text" id="f-name" required placeholder="Гаврищук Любомир Михайлович">
         </div>
 
         <div class="field-row">
